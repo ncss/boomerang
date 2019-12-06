@@ -1,5 +1,8 @@
 from flask import Flask, g, request, jsonify
 
+from flask_swagger import swagger
+from flask_swagger_ui import get_swaggerui_blueprint
+
 import sqlite3
 
 app = Flask(__name__)
@@ -54,10 +57,52 @@ def db_fetch(key):
   c.execute('SELECT * FROM store WHERE key=? LIMIT 1', (key,))
   return c.fetchone()
 
+# Docs
+SWAGGER_URL = '/docs'
+API_URL = '/api/spec'
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={'app_name': 'Storage API'},
+)
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
+
+@app.route("/api/spec")
+def spec():
+    swag = swagger(app)
+    swag['info']['version'] = '1.0'
+    swag['info']['title'] = 'Storage API'
+    return jsonify(swag)
+
 # Routes
 
 @app.route('/<path:key>', methods=['POST'])
 def store(key):
+  '''
+    Store a value
+    ---
+    tags:
+      - store
+    parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          example: 'group1/users/georgina'
+        description: the key you want to store a value with, it can be a path
+      - in: body
+        name: value
+        schema:
+          type: string
+          example: '{"name": "georgina", "food": "marzipan"}'
+        description: the string you want to store with the key, you can encode JSON and store it too
+    responses:
+      200:
+        description: Returns a JSON object describing what was stored
+        schema:
+          id: Value
+  '''
   value = request.args.get('value')
   result = db_store(key, value)
   
@@ -69,6 +114,31 @@ def store(key):
 
 @app.route('/<path:key>', methods=['GET'])
 def fetch(key):
+  '''
+    Retrieve a value
+    ---
+    tags:
+      - fetch
+    parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          example: 'group1/users/georgina'
+        description: the key you want to fetch the value for
+    responses:
+      200:
+        description: Returns a JSON object describing what was stored
+        schema:
+          id: Value
+          properties:
+            key:
+              type: string
+              example: group1/users/georgina
+            value:
+              type: string
+              example: '{"name": "georgina", "food": "marzipan"}'
+  '''
   result = db_fetch(key)
   
   if result:
