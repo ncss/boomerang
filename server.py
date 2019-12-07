@@ -3,6 +3,7 @@ from flask import Flask, g, request, jsonify
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 
+import json
 import sqlite3
 
 app = Flask(__name__)
@@ -40,22 +41,30 @@ def db_init():
 # DB Access
 
 def db_store(key, value):
+  value = json.dumps(value)
   conn = get_db()
   c = conn.cursor()
-  c.execute('''INSERT INTO store
-               VALUES (?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now'), strftime('%Y-%m-%d %H:%M:%S', 'now'))
-               ON CONFLICT (key) DO UPDATE SET
-                 key = ?,
+  try:
+    c.execute('''INSERT INTO store
+                 VALUES (?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now'), strftime('%Y-%m-%d %H:%M:%S', 'now'))
+              ''', (key, value))
+  except sqlite3.IntegrityError:
+    c.execute('''UPDATE store WHERE key=? SET
                  value = ?,
                  updated = strftime('%Y-%m-%d %H:%M:%S', 'now')
-               ''', (key, value, key, value))
+               ''', (key, value))
   conn.commit()
   return True 
 
 def db_fetch(key):
   c = get_db().cursor()
   c.execute('SELECT * FROM store WHERE key=? LIMIT 1', (key,))
-  return c.fetchone()
+  result = c.fetchone()
+  if result:
+    value = result['value']
+    return json.loads(value)
+  else:
+    return None
 
 # Docs
 SWAGGER_URL = '/docs'
@@ -85,25 +94,25 @@ def store(key):
     tags:
       - store
     parameters:
-      - in: path
-        name: key
-        schema:
-          type: string
-          example: 'group1/users/georgina'
-        description: the key you want to store a value with, it can be a path
       - in: body
-        name: value
-        schema:
-          type: string
-          example: '{"name": "georgina", "food": "marzipan"}'
-        description: the string you want to store with the key, you can encode JSON and store it too
+        description: A JSON object to store
+        content:
+          text/json:
+            schema:
+              type: object
+            example:
+              name: georgina
+              food: marzipan
     responses:
       200:
         description: Returns a JSON object describing what was stored
         schema:
           id: Value
   '''
-  value = request.args.get('value')
+  try:
+    value = request.get_json()
+  except:
+    abort(400, 'You need to supply JSON')
   result = db_store(key, value)
   
   return jsonify({
@@ -137,7 +146,7 @@ def fetch(key):
               example: group1/users/georgina
             value:
               type: string
-              example: '{"name": "georgina", "food": "marzipan"}'
+              example: {"name": "georgina", "food": "marzipan"}
   '''
   result = db_fetch(key)
   
