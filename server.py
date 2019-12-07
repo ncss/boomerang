@@ -1,4 +1,4 @@
-from flask import Flask, g, request, jsonify
+from flask import Flask, g, request, jsonify, abort
 
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -159,10 +159,7 @@ def fetch(key):
   if result:
     return jsonify(result)
   else:
-    return jsonify({
-      'key': key,
-      'value': None,
-    }), 404
+    return jsonify(None), 404
 
 
 if __name__ == '__main__':
