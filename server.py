@@ -94,6 +94,12 @@ def store(key):
     tags:
       - store
     parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          example: 'group1/users/georgina'
+        description: the key you want to fetch the value for
       - in: body
         description: A JSON object to store
         content:
