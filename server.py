@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from flask import Flask, g, request, jsonify, abort
+from flask import Flask, g, request, jsonify
 
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -94,6 +94,19 @@ def spec():
 
 # Routes
 
+def json_error(status_code, message):
+  resp = jsonify({"status": status_code, "error": message})
+  resp.status_code = status_code
+  return resp
+
+@app.errorhandler(400)
+def bad_request(message=None):
+  return json_error(400, message or "bad request")
+
+@app.errorhandler(404)
+def not_found(message=None):
+  return json_error(404, message or "not found")
+
 @app.route('/<path:key>', methods=['POST'])
 def store(key):
   '''
@@ -130,9 +143,9 @@ def store(key):
   except:
     value = None
   if value is None:
-    abort(400, 'You need to supply JSON')
-  result = db_store(key, value)
+    return bad_request("You need to supply JSON")
 
+  result = db_store(key, value)
   return jsonify({
     'key': key,
     'value': value,
@@ -193,7 +206,7 @@ def fetch(key):
 
   result = db_fetch(key)
   if result is None:
-    abort(404, "No such key")
+    return not_found("No such key: %s" % (key,))
 
   return jsonify(result)
 
