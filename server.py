@@ -98,15 +98,15 @@ def json_error(status_code, message):
   return resp
 
 @app.errorhandler(400)
-def bad_request(message=None):
+def bad_request(*_, message=None):
   return json_error(400, message or "bad request")
 
 @app.errorhandler(404)
-def not_found(message=None):
+def not_found(*_, message=None):
   return json_error(404, message or "not found")
 
 @app.errorhandler(500)
-def internal_server_error(message=None):
+def internal_server_error(*_, message=None):
   return json_error(500, message or "internal server error")
 
 @app.route('/<path:key>', methods=['POST'])
@@ -145,12 +145,12 @@ def store(key):
   except:
     value = None
   if value is None:
-    return bad_request("You need to supply JSON")
+    return bad_request(message="You need to supply JSON")
 
   try:
     db_store(key, value)
   except:
-    return internal_server_error("Failed to store key")
+    return internal_server_error(message="Failed to store key")
 
   return jsonify({
     'key': key,
@@ -211,7 +211,7 @@ def fetch(key):
 
   result = db_fetch(key)
   if result is None:
-    return not_found("No such key: %s" % (key,))
+    return not_found(message="No such key: %s" % (key,))
 
   return jsonify(result)
 
