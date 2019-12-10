@@ -68,6 +68,12 @@ def db_fetch(key):
   else:
     return None
 
+def db_delete(key):
+  conn = get_db()
+  c = conn.cursor()
+  c.execute('DELETE FROM store WHERE key = ?', (key,))
+  conn.commit()
+
 # Docs
 SWAGGER_URL = '/docs'
 API_URL = '/api/spec'
@@ -132,6 +138,28 @@ def store(key):
     'value': value,
     'stored': result
   })
+
+@app.route('/<path:key>', methods=['DELETE'])
+def delete(key):
+  '''
+    Delete an existing key
+    ---
+    tags:
+      - delete
+    parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          example: 'group1/users/georgina'
+        description: the key you want to delete
+    responses:
+      204:
+        description: Indicates that the key has been deleted successfully.
+  '''
+
+  db_delete(key)
+  return "", 204
 
 @app.route('/<path:key>', methods=['GET'])
 def fetch(key):
