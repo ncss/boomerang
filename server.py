@@ -112,6 +112,8 @@ def store(key):
               name: georgina
               food: marzipan
     responses:
+      400:
+        description: Indicates that the value provided is invalid
       200:
         description: Returns a JSON object describing what was stored
         schema:
@@ -120,6 +122,8 @@ def store(key):
   try:
     value = request.get_json()
   except:
+    value = None
+  if value is None:
     abort(400, 'You need to supply JSON')
   result = db_store(key, value)
 
@@ -144,6 +148,8 @@ def fetch(key):
           example: 'group1/users/georgina'
         description: the key you want to fetch the value for
     responses:
+      404:
+        description: Indicates that the key could not be found.
       200:
         description: Returns a JSON object describing what was stored
         schema:
@@ -156,12 +162,12 @@ def fetch(key):
               type: string
               example: {"name": "georgina", "food": "marzipan"}
   '''
-  result = db_fetch(key)
 
-  if result:
-    return jsonify(result)
-  else:
-    return jsonify(None), 404
+  result = db_fetch(key)
+  if result is None:
+    abort(404, "No such key")
+
+  return jsonify(result)
 
 
 if __name__ == '__main__':
