@@ -38,7 +38,6 @@ def db_init():
     c.execute('''CREATE TABLE IF NOT EXISTS store
                  (key TEXT PRIMARY KEY, value TEXT, created DATEIME, updated DATETIME)''')
     conn.commit()
-    return True
 
 # DB Access
 
@@ -56,7 +55,6 @@ def db_store(key, value):
                  WHERE key = ?
                ''', (key, value))
   conn.commit()
-  return True
 
 def db_fetch(key):
   c = get_db().cursor()
@@ -107,6 +105,10 @@ def bad_request(message=None):
 def not_found(message=None):
   return json_error(404, message or "not found")
 
+@app.errorhandler(500)
+def internal_server_error(message=None):
+  return json_error(500, message or "internal server error")
+
 @app.route('/<path:key>', methods=['POST'])
 def store(key):
   '''
@@ -145,11 +147,14 @@ def store(key):
   if value is None:
     return bad_request("You need to supply JSON")
 
-  result = db_store(key, value)
+  try:
+    db_store(key, value)
+  except:
+    return internal_server_error("Failed to store key")
+
   return jsonify({
     'key': key,
     'value': value,
-    'stored': result
   })
 
 @app.route('/<path:key>', methods=['DELETE'])
