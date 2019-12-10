@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from flask import Flask, g, request, jsonify, abort
 
 from flask_swagger import swagger
