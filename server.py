@@ -12,13 +12,13 @@ app = Flask(__name__)
 
 DATABASE = 'store.db'
 
-# DB Helpers 
+# DB Helpers
 
 def get_db():
   db = getattr(g, '_database', None)
   if db is None:
     db = g._database = sqlite3.connect(DATABASE)
-    db.row_factory = make_dicts 
+    db.row_factory = make_dicts
   return db
 
 @app.teardown_appcontext
@@ -56,7 +56,7 @@ def db_store(key, value):
                  updated = strftime('%Y-%m-%d %H:%M:%S', 'now')
                ''', (key, value))
   conn.commit()
-  return True 
+  return True
 
 def db_fetch(key):
   c = get_db().cursor()
@@ -122,7 +122,7 @@ def store(key):
   except:
     abort(400, 'You need to supply JSON')
   result = db_store(key, value)
-  
+
   return jsonify({
     'key': key,
     'value': value,
@@ -157,7 +157,7 @@ def fetch(key):
               example: {"name": "georgina", "food": "marzipan"}
   '''
   result = db_fetch(key)
-  
+
   if result:
     return jsonify(result)
   else:
