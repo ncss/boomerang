@@ -51,16 +51,16 @@ def db_store(key, value):
                  VALUES (?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now'), strftime('%Y-%m-%d %H:%M:%S', 'now'))
               ''', (key, value))
   except sqlite3.IntegrityError:
-    c.execute('''UPDATE store WHERE key=? SET
-                 value = ?,
-                 updated = strftime('%Y-%m-%d %H:%M:%S', 'now')
+    c.execute('''UPDATE store
+                 SET value = ?, updated = strftime('%Y-%m-%d %H:%M:%S', 'now')
+                 WHERE key = ?
                ''', (key, value))
   conn.commit()
   return True
 
 def db_fetch(key):
   c = get_db().cursor()
-  c.execute('SELECT * FROM store WHERE key=? LIMIT 1', (key,))
+  c.execute('SELECT * FROM store WHERE key = ? LIMIT 1', (key,))
   result = c.fetchone()
   if result:
     value = result['value']
