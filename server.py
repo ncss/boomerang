@@ -160,7 +160,7 @@ def store(key):
 @app.route('/<path:key>', methods=['DELETE'])
 def delete(key):
   '''
-    Delete an existing key
+    Delete a key (if it exists)
     ---
     tags:
       - delete
@@ -173,7 +173,7 @@ def delete(key):
         description: the key you want to delete
     responses:
       204:
-        description: Indicates that the key has been deleted successfully.
+        description: Indicates that the key has been deleted successfully, or the key was not present in the first place.
   '''
 
   db_delete(key)
