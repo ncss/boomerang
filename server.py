@@ -53,7 +53,7 @@ def db_store(key, value):
     c.execute('''UPDATE store
                  SET value = ?, updated = strftime('%Y-%m-%d %H:%M:%S', 'now')
                  WHERE key = ?
-               ''', (key, value))
+               ''', (value, key))
   conn.commit()
 
 def db_fetch(key):
@@ -116,27 +116,28 @@ def store(key):
     ---
     tags:
       - store
+    consumes:
+      - application/json
     parameters:
       - in: path
         name: key
-        schema:
-          type: string
-          example: 'group1/users/georgina'
-        description: the key you want to fetch the value for
+        type: string
+        required: true
+        default: 'group1/users/georgina'
+        description: the key you want to store the value at
       - in: body
+        name: value
         description: A JSON object to store
-        content:
-          text/json:
-            schema:
-              type: object
-            example:
-              name: georgina
-              food: marzipan
+        schema:
+          type: object
+          example:
+            name: georgina
+            food: marzipan
     responses:
       400:
-        description: Indicates that the value provided is invalid
+        description: The given value was invalid.
       200:
-        description: Returns a JSON object describing what was stored
+        description: The key was successfully stored.
         schema:
           id: Value
   '''
@@ -167,13 +168,13 @@ def delete(key):
     parameters:
       - in: path
         name: key
-        schema:
-          type: string
-          example: 'group1/users/georgina'
+        type: string
+        required: true
+        default: 'group1/users/georgina'
         description: the key you want to delete
     responses:
       204:
-        description: Indicates that the key has been deleted successfully, or the key was not present in the first place.
+        description: The key was either successfully deleted, or was never there.
   '''
 
   db_delete(key)
@@ -189,15 +190,15 @@ def fetch(key):
     parameters:
       - in: path
         name: key
-        schema:
-          type: string
-          example: 'group1/users/georgina'
+        type: string
+        required: true
+        default: 'group1/users/georgina'
         description: the key you want to fetch the value for
     responses:
       404:
-        description: Indicates that the key could not be found.
+        description: There was no JSON object stored at the key.
       200:
-        description: Returns a JSON object describing what was stored
+        description: The JSON object stored at the key was returned.
         schema:
           id: Value
           properties:
