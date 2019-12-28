@@ -66,11 +66,13 @@ def db_fetch(key):
   else:
     return None
 
-def db_delete(key):
+def db_delete(key: str) -> bool:
   conn = get_db()
   c = conn.cursor()
   c.execute('DELETE FROM store WHERE key = ?', (key,))
+  did_delete = c.rowcount > 0
   conn.commit()
+  return did_delete
 
 # Docs
 SWAGGER_URL = '/docs'
@@ -175,11 +177,15 @@ def delete(key):
         description: the key you want to delete
     responses:
       204:
-        description: The key was either successfully deleted, or was never there.
+        description: The key was successfully deleted
+      404:
+        description: The key did not exist
   '''
 
-  db_delete(key)
-  return "", 204
+  if db_delete(key):
+    return "", 204
+  else:
+    return not_found(message="No such key: %s" % (key,))
 
 @app.route('/<path:key>', methods=['GET'])
 def fetch(key):
