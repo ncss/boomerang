@@ -74,7 +74,7 @@ def db_delete(key: str) -> bool:
   return did_delete
 
 # Docs
-SWAGGER_URL = '/docs/'
+SWAGGER_URL = '/docs'
 API_URL = '/api/spec'
 swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,

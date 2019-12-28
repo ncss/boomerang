@@ -121,7 +121,7 @@ class ServerTestCase(unittest.TestCase):
         # the base url redirects to the docs
         res = self.client.get("/")
         self.assertEqual(res.status_code, 302)
-        self.assertIn("/docs/", res.location)
+        self.assertIn("/docs", res.location)
 
 
 if __name__ == "__main__":
