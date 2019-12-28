@@ -146,7 +146,14 @@ def store(key):
       200:
         description: The key was successfully stored.
         schema:
-          id: Value
+          type: object
+          properties:
+            key:
+              type: string
+              example: group1/users/georgina
+            value:
+              type: string
+              example: {"name": "georgina", "food": "marzipan"}
   '''
   try:
     value = request.get_json()
@@ -211,14 +218,10 @@ def fetch(key):
       200:
         description: The JSON object stored at the key was returned.
         schema:
-          id: Value
-          properties:
-            key:
-              type: string
-              example: group1/users/georgina
-            value:
-              type: string
-              example: {"name": "georgina", "food": "marzipan"}
+          type: object
+          example:
+            name: georgina
+            food: marzipan
   '''
 
   result = db_fetch(key)
