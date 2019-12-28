@@ -127,6 +127,7 @@ def store(key):
         description: the key you want to store the value at
       - in: body
         name: value
+        required: true
         description: A JSON object to store
         schema:
           type: object
