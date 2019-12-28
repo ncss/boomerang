@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from flask import Flask, g, request, jsonify
+from flask import Flask, g, request, jsonify, redirect
 
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -9,15 +9,14 @@ import json
 import sqlite3
 
 app = Flask(__name__)
-
-DATABASE = 'store.db'
+app.config['DATABASE'] = 'store.db'
 
 # DB Helpers
 
 def get_db():
   db = getattr(g, '_database', None)
   if db is None:
-    db = g._database = sqlite3.connect(DATABASE)
+    db = g._database = sqlite3.connect(app.config['DATABASE'])
     db.row_factory = make_dicts
   return db
 
@@ -75,7 +74,7 @@ def db_delete(key: str) -> bool:
   return did_delete
 
 # Docs
-SWAGGER_URL = '/docs'
+SWAGGER_URL = '/docs/'
 API_URL = '/api/spec'
 swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
@@ -91,6 +90,11 @@ def spec():
     swag['info']['version'] = '1.0'
     swag['info']['title'] = 'Storage API'
     return jsonify(swag)
+
+
+@app.route("/")
+def homepage():
+  return redirect(SWAGGER_URL)
 
 # Routes
 
