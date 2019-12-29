@@ -194,7 +194,10 @@ def delete(key):
   '''
 
   if db_delete(key):
-    return "", 204
+    return jsonify({
+      'key': key,
+      'deleted': True,
+    })
   else:
     return not_found(message="No such key: %s" % (key,))
 

@@ -53,9 +53,9 @@ class ServerTestCase(unittest.TestCase):
 
         # and delete it
         res = self.client.delete(PATH)
-        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.status_code, 200)
         res_json = res.get_json()
-        self.assertIsNone(res_json)
+        self.assertEqual(res_json, {'key': KEY, 'deleted': True})
 
         # now it should no longer exist
         res = self.client.get(PATH)
