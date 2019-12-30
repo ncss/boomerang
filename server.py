@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from flask import Flask, g, request, jsonify
+from flask import Flask, g, request, jsonify, redirect
 
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -9,15 +9,14 @@ import json
 import sqlite3
 
 app = Flask(__name__)
-
-DATABASE = 'store.db'
+app.config['DATABASE'] = 'store.db'
 
 # DB Helpers
 
 def get_db():
   db = getattr(g, '_database', None)
   if db is None:
-    db = g._database = sqlite3.connect(DATABASE)
+    db = g._database = sqlite3.connect(app.config['DATABASE'])
     db.row_factory = make_dicts
   return db
 
@@ -66,11 +65,13 @@ def db_fetch(key):
   else:
     return None
 
-def db_delete(key):
+def db_delete(key: str) -> bool:
   conn = get_db()
   c = conn.cursor()
   c.execute('DELETE FROM store WHERE key = ?', (key,))
+  did_delete = c.rowcount > 0
   conn.commit()
+  return did_delete
 
 # Docs
 SWAGGER_URL = '/docs'
@@ -89,6 +90,11 @@ def spec():
     swag['info']['version'] = '1.0'
     swag['info']['title'] = 'Storage API'
     return jsonify(swag)
+
+
+@app.route("/")
+def homepage():
+  return redirect(SWAGGER_URL)
 
 # Routes
 
@@ -127,6 +133,7 @@ def store(key):
         description: the key you want to store the value at
       - in: body
         name: value
+        required: true
         description: A JSON object to store
         schema:
           type: object
@@ -139,7 +146,14 @@ def store(key):
       200:
         description: The key was successfully stored.
         schema:
-          id: Value
+          type: object
+          properties:
+            key:
+              type: string
+              example: group1/users/georgina
+            value:
+              type: string
+              example: {"name": "georgina", "food": "marzipan"}
   '''
   try:
     value = request.get_json()
@@ -174,11 +188,18 @@ def delete(key):
         description: the key you want to delete
     responses:
       204:
-        description: The key was either successfully deleted, or was never there.
+        description: The key was successfully deleted
+      404:
+        description: The key did not exist
   '''
 
-  db_delete(key)
-  return "", 204
+  if db_delete(key):
+    return jsonify({
+      'key': key,
+      'deleted': True,
+    })
+  else:
+    return not_found(message="No such key: %s" % (key,))
 
 @app.route('/<path:key>', methods=['GET'])
 def fetch(key):
@@ -200,14 +221,10 @@ def fetch(key):
       200:
         description: The JSON object stored at the key was returned.
         schema:
-          id: Value
-          properties:
-            key:
-              type: string
-              example: group1/users/georgina
-            value:
-              type: string
-              example: {"name": "georgina", "food": "marzipan"}
+          type: object
+          example:
+            name: georgina
+            food: marzipan
   '''
 
   result = db_fetch(key)
