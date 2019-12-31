@@ -55,6 +55,17 @@ def db_store(key, value):
                ''', (value, key))
   conn.commit()
 
+def db_list(key):
+  c = get_db().cursor()
+  search = f'{key.rstrip("/")}%'
+  c.execute('SELECT * FROM store WHERE key LIKE ?', (search,))
+  result = c.fetchall()
+  values = {
+    item['key']: json.loads(item['value'])
+    for item in result
+  }
+  return values
+
 def db_fetch(key):
   c = get_db().cursor()
   c.execute('SELECT * FROM store WHERE key = ? LIMIT 1', (key,))
@@ -215,9 +226,19 @@ def fetch(key):
         required: true
         default: 'group1/users/georgina'
         description: the key you want to fetch the value for
+      - in: query
+        name: list 
+        type: string
+        description: include this query parameter if you would like a list of subkeys
+
     responses:
       404:
         description: There was no JSON object stored at the key.
+      200:
+        description: The JSON object stored at the key was returned.
+        schema:
+          type: array
+          example: ["/tutors/georgina", "/tutors/sasha", "/tutors/kenni"]
       200:
         description: The JSON object stored at the key was returned.
         schema:
@@ -227,9 +248,12 @@ def fetch(key):
             food: marzipan
   '''
 
-  result = db_fetch(key)
-  if result is None:
-    return not_found(message="No such key: %s" % (key,))
+  if 'list' in request.values:
+    result = db_list(key)
+  else:
+    result = db_fetch(key)
+    if result is None:
+      return not_found(message="No such key: %s" % (key,))
 
   return jsonify(result)
 
