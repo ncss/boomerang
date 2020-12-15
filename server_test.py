@@ -21,8 +21,9 @@ class ServerTestCase(unittest.TestCase):
             "truthy": True,
             "a string": "yes, a string 🎉",
         }
-        KEY = "my/test/key1"
-        PATH = f"/{KEY}"
+        SHARD = "my"
+        KEY = "test/key1"
+        PATH = f"/{SHARD}/{KEY}"
 
         # it should not previously exist
         res = self.client.get(PATH)
@@ -43,6 +44,7 @@ class ServerTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         res_json = res.get_json()
         self.assertEqual(res_json["value"]["one"], 1)
+        self.assertEqual(res_json["shard"], SHARD)
         self.assertEqual(res_json["key"], KEY)
 
         # now it should exist
@@ -55,7 +57,7 @@ class ServerTestCase(unittest.TestCase):
         res = self.client.delete(PATH)
         self.assertEqual(res.status_code, 200)
         res_json = res.get_json()
-        self.assertEqual(res_json, {'key': KEY, 'deleted': True})
+        self.assertEqual(res_json, {'shard': SHARD, 'key': KEY, 'deleted': True})
 
         # now it should no longer exist
         res = self.client.get(PATH)
@@ -66,8 +68,9 @@ class ServerTestCase(unittest.TestCase):
 
     def test_updates(self):
         data = {"number": 1}
-        KEY = "my/test/key2"
-        PATH = f"/{KEY}"
+        SHARD = "my"
+        KEY = "test/key2"
+        PATH = f"/{SHARD}/{KEY}"
 
         # check that it doesn't exist
         res = self.client.get(PATH)
@@ -108,6 +111,9 @@ class ServerTestCase(unittest.TestCase):
         # the base url is not allowed to be posted to
         res = self.client.post("/", json={"hello": True})
         self.assertEqual(res.status_code, 405)
+        # the base url is not allowed to be posted to
+        res = self.client.post("/tes", json={"hello": True})
+        self.assertEqual(res.status_code, 404)
 
     def test_api_spec_endpoints(self):
         res = self.client.get("/api/spec")
