@@ -107,6 +107,10 @@ def json_error(status_code, message):
 def bad_request(*_, message=None):
   return json_error(400, message or "bad request")
 
+@app.errorhandler(403)
+def forbidden(*_, message=None):
+  return json_error(403, message or "forbidden")
+
 @app.errorhandler(404)
 def not_found(*_, message=None):
   return json_error(404, message or "not found")
@@ -161,6 +165,9 @@ def store(key):
     value = None
   if value is None:
     return bad_request(message="You need to supply JSON")
+
+  if '/' not in key:
+    return forbidden(message="You must use keys with a forward slash.")
 
   try:
     db_store(key, value)
