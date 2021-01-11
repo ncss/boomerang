@@ -35,29 +35,23 @@ def db_init():
     conn = get_db()
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS store
-                 (key TEXT PRIMARY KEY, value TEXT, created DATEIME, updated DATETIME)''')
+                 (shard TEXT, key TEXT, value TEXT, created DATEIME, updated DATETIME, PRIMARY KEY(shard, key))''')
     conn.commit()
 
 # DB Access
 
-def db_store(key, value):
+def db_store(shard, key, value):
   value = json.dumps(value)
   conn = get_db()
   c = conn.cursor()
-  try:
-    c.execute('''INSERT INTO store
-                 VALUES (?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now'), strftime('%Y-%m-%d %H:%M:%S', 'now'))
-              ''', (key, value))
-  except sqlite3.IntegrityError:
-    c.execute('''UPDATE store
-                 SET value = ?, updated = strftime('%Y-%m-%d %H:%M:%S', 'now')
-                 WHERE key = ?
-               ''', (value, key))
+  c.execute('''INSERT OR REPLACE INTO store
+               VALUES (?, ?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now'), strftime('%Y-%m-%d %H:%M:%S', 'now'))
+            ''', (shard, key, value))
   conn.commit()
 
-def db_fetch(key):
+def db_fetch(shard, key):
   c = get_db().cursor()
-  c.execute('SELECT * FROM store WHERE key = ? LIMIT 1', (key,))
+  c.execute('SELECT * FROM store WHERE shard = ? AND key = ? LIMIT 1', (shard, key))
   result = c.fetchone()
   if result:
     value = result['value']
@@ -65,7 +59,7 @@ def db_fetch(key):
   else:
     return None
 
-def db_delete(key: str) -> bool:
+def db_delete(shard: str, key: str) -> bool:
   conn = get_db()
   c = conn.cursor()
   c.execute('DELETE FROM store WHERE key = ?', (key,))
@@ -119,8 +113,8 @@ def not_found(*_, message=None):
 def internal_server_error(*_, message=None):
   return json_error(500, message or "internal server error")
 
-@app.route('/<path:key>', methods=['POST'])
-def store(key):
+@app.route('/<shard>/<path:key>', methods=['POST'])
+def store(shard, key):
   '''
     Store a value
     ---
@@ -130,10 +124,16 @@ def store(key):
       - application/json
     parameters:
       - in: path
+        name: shard
+        type: string
+        required: true
+        default: 'group1'
+        description: a code used consistently for every request from your app.
+      - in: path
         name: key
         type: string
         required: true
-        default: 'group1/users/georgina'
+        default: 'users/georgina'
         description: the key you want to store the value at
       - in: body
         name: value
@@ -146,15 +146,18 @@ def store(key):
             food: marzipan
     responses:
       400:
-        description: The given value was invalid.
+        description: The given shard or value was invalid.
       200:
         description: The key was successfully stored.
         schema:
           type: object
           properties:
+            shard:
+              type: string
+              example: group1
             key:
               type: string
-              example: group1/users/georgina
+              example: users/georgina
             value:
               type: string
               example: {"name": "georgina", "food": "marzipan"}
@@ -170,23 +173,30 @@ def store(key):
     return forbidden(message="You must use keys with a forward slash.")
 
   try:
-    db_store(key, value)
+    db_store(shard, key, value)
   except:
     return internal_server_error(message="Failed to store key")
 
   return jsonify({
+    'shard': shard,
     'key': key,
     'value': value,
   })
 
-@app.route('/<path:key>', methods=['DELETE'])
-def delete(key):
+@app.route('/<shard>/<path:key>', methods=['DELETE'])
+def delete(shard, key):
   '''
     Delete a key (if it exists)
     ---
     tags:
       - delete
     parameters:
+      - in: path
+        name: shard
+        type: string
+        required: true
+        default: 'group1'
+        description: a code used consistently for every request from your app.
       - in: path
         name: key
         type: string
@@ -200,22 +210,29 @@ def delete(key):
         description: The key did not exist
   '''
 
-  if db_delete(key):
+  if db_delete(shard, key):
     return jsonify({
+      'shard': shard,
       'key': key,
       'deleted': True,
     })
   else:
     return not_found(message="No such key: %s" % (key,))
 
-@app.route('/<path:key>', methods=['GET'])
-def fetch(key):
+@app.route('/<shard>/<path:key>', methods=['GET'])
+def fetch(shard, key):
   '''
     Retrieve a value
     ---
     tags:
       - fetch
     parameters:
+      - in: path
+        name: shard
+        type: string
+        required: true
+        default: 'group1'
+        description: a code used consistently for every request from your app.
       - in: path
         name: key
         type: string
@@ -234,7 +251,7 @@ def fetch(key):
             food: marzipan
   '''
 
-  result = db_fetch(key)
+  result = db_fetch(shard, key)
   if result is None:
     return not_found(message="No such key: %s" % (key,))
 
