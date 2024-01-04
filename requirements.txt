@@ -1,4 +1,0 @@
-flask
-gunicorn
-flask-swagger
-flask-swagger-ui
