@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "boomerang"
+version = "0.0.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Flask = "^3.0.0"
+gunicorn = "^21.2.0"
+flask-swagger = "^0.2.14"
+flask-swagger-ui = "^4.11.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

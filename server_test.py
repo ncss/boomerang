@@ -2,14 +2,13 @@ import os
 import tempfile
 import unittest
 
-from server import app, db_init
+from server import app
 
 
 class ServerTestCase(unittest.TestCase):
     def setUp(self):
         self.db_fd, app.config["DATABASE"] = tempfile.mkstemp()
         self.client = app.test_client()
-        db_init()
 
     def tearDown(self):
         os.close(self.db_fd)

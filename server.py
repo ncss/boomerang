@@ -8,6 +8,15 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import json
 import sqlite3
 
+
+DB_INIT = '''
+PRAGMA journal_mode = WAL;     -- Write-ahead log allows concurrent readers during a write.
+PRAGMA synchronous = normal;   -- Default is 'full', requiring a full fsync after each commit.
+
+CREATE TABLE IF NOT EXISTS store
+  (key TEXT PRIMARY KEY, value TEXT, created DATEIME, updated DATETIME);
+'''
+
 app = Flask(__name__)
 app.config['DATABASE'] = 'store.db'
 
@@ -17,6 +26,7 @@ def get_db():
   db = getattr(g, '_database', None)
   if db is None:
     db = g._database = sqlite3.connect(app.config['DATABASE'])
+    db.executescript(DB_INIT)
     db.row_factory = make_dicts
   return db
 
@@ -29,14 +39,6 @@ def close_connection(exception):
 def make_dicts(cursor, row):
     return dict((cursor.description[idx][0], value)
                 for idx, value in enumerate(row))
-
-def db_init():
-  with app.app_context():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS store
-                 (key TEXT PRIMARY KEY, value TEXT, created DATEIME, updated DATETIME)''')
-    conn.commit()
 
 # DB Access
 
@@ -242,5 +244,4 @@ def fetch(key):
 
 
 if __name__ == '__main__':
-  db_init()
   app.run(debug=True, port=3000)
