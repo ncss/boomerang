@@ -176,10 +176,7 @@ def store(key):
   except:
     return internal_server_error(message="Failed to store key")
 
-  return jsonify({
-    'key': key,
-    'value': value,
-  })
+  return jsonify(value)
 
 @app.route('/<path:key>', methods=['DELETE'])
 def delete(key):
@@ -203,12 +200,9 @@ def delete(key):
   '''
 
   if db_delete(key):
-    return jsonify({
-      'key': key,
-      'deleted': True,
-    })
+    return jsonify({}), 200  # 200: Gone
   else:
-    return not_found(message="No such key: %s" % (key,))
+    return jsonify({}), 404  # 404: Not found
 
 @app.route('/<path:key>', methods=['GET'])
 def fetch(key):
@@ -238,7 +232,7 @@ def fetch(key):
 
   result = db_fetch(key)
   if result is None:
-    return not_found(message="No such key: %s" % (key,))
+    return jsonify({}), 404  # 404: Not found
 
   return jsonify(result)
 
