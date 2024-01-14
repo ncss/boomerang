@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from flask import Flask, g, request, jsonify, redirect
-
+from flask_cors import CORS
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 
@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS store
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'store.db'
+CORS(app)
 
 # DB Helpers
 
